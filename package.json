@@ -1,0 +1,11 @@
+{
+  "name": "gobits",
+  "version": "0.0.1",
+  "main": "index.js",
+  "repository": "git@github.com:necrobits/gobits.git",
+  "author": "Andy Tran <andy.tran11996@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^4.5.2"
+  }
+}
