@@ -6,24 +6,6 @@ import { autoUrlEncodedForm, autoJson } from './middlewares';
 type Headers = {[headerName:string]: string}
 type RequestMethod = 'GET' | 'PUT' | 'POST' | 'DELETE' | 'PATCH';
 type QueryParams = {[paramName: string]: string | number}
-export type Request<T=any> = {
-    headers: Headers;
-    url: string;
-    query: {[param:string]: string | number};
-    body: T | null;
-    readonly opts: RequestOptions;
-    readonly method: RequestMethod;
-}
-
-export type Response<T=any> = {
-    headers: Headers;
-    status: number;
-    ok: boolean;
-    body: T | null;
-    responded: boolean;
-    completed: boolean;
-    _nativeResponse: globalThis.Response | null;
-}
 
 type NextFn = () => Promise<any>;
 export type Middleware = (req: Request, res: Response, next: NextFn, responding?: boolean) => Promise<any> | void;
@@ -43,6 +25,82 @@ type RequestOptions = {
     timeout? : number;
     type?: string;
     [p: string]: any;
+}
+
+class Request<T=any> {
+    public headers: Headers;
+    public url: string;
+    public query: {[param:string]: string | number};
+    public body: T | null;
+    readonly opts: RequestOptions;
+    readonly method: RequestMethod;
+    constructor(url: string, method: RequestMethod, opts: RequestOptions = {}) {
+        this.method = method;
+        this.url = url;
+        this.opts = opts;
+        this.headers = opts.headers || {};
+        this.query = opts.query || {};
+        this.body = opts.body || null;
+    }
+}
+
+enum ResponseState {
+    Pending,
+    Responded,
+    Completed
+}
+
+class Response<T=any>{
+    public headers: Headers;
+    public status: number;
+    public body: T | null;
+
+    private _state: ResponseState
+    _nativeResponse: globalThis.Response | null;
+
+    constructor(){
+        this.headers = {};
+        this.status = 0;
+        this.body = null;
+        this._state = ResponseState.Pending;
+        this._nativeResponse = null;
+    }
+
+    markAsResponded() {
+        if (this._state !== ResponseState.Pending) {
+            console.warn('Response is already responded or completed');
+            return;
+        }
+        this._state = ResponseState.Responded;
+    }
+
+    markAsCompleted() {
+        if (this._state === ResponseState.Completed) {
+            console.warn('Response is already completed');
+            return;
+        }
+        this._state = ResponseState.Completed;
+    }
+
+    public get isResponded(): boolean { 
+        return this._state === ResponseState.Responded || this.isCompleted;
+    }
+
+    public get isCompleted(): boolean {
+        return this._state === ResponseState.Completed;
+    }
+
+    public get redirected(): boolean {
+        return this._nativeResponse?.redirected ?? false;
+    }
+    
+    public get ok(): boolean {
+        return this.status >= 200 && this.status < 300;
+    }
+
+    public get native(): globalThis.Response | null {
+        return this._nativeResponse;
+    }
 }
 
 export class Gobits{
@@ -102,23 +160,8 @@ export class Gobits{
             query: queryParams,
         });
 
-        let req: Request = {
-            url: targetUrl,
-            headers: options.headers || {},
-            query: queryParams,
-            body: options.body || null,
-            opts: _.merge(this.config, options),
-            method: method
-        };
-        let res: Response = {
-            headers: {},
-            status: 0,
-            ok: false,
-            body: null,
-            responded: false,
-            completed: false,
-            _nativeResponse: null
-        }
+        const req = new Request(targetUrl, method, _.merge(this.config, options)); 
+        const res = new Response<T>();
 
         // Pass through the middleware chain
         let next = _.reduceRight(
@@ -127,7 +170,7 @@ export class Gobits{
             ()=>Promise.resolve({}));
         await next();
         
-        if (!res.responded){
+        if (!res.isResponded){
             const controller = new AbortController();
             const promise = fetch(url, { 
                 signal: controller.signal, 
@@ -142,26 +185,24 @@ export class Gobits{
             res.status = fetchResponse.status
             res.headers = transformFetchHeaders(fetchResponse.headers);
             res.body = await ResponseParsers[responseParser](fetchResponse);
-            res.ok = fetchResponse.ok;
-            res.responded = true;
+            res.markAsResponded();
         }
         // Pass backwards
-        if (!res.completed){
-            next = _.reduce(
+        if (!res.isCompleted){
+            next = _.reduceRight(
                 this.middlewares,
                 (n, middleware) => async () => await chain(middleware,req, res, n, true),
                 ()=>Promise.resolve({}));
             await next();
-            res.completed = true;
+            res.markAsCompleted();
         }
-        res.ok = res.status >= 200 && res.status < 300;
         // At this stage, we believe that some middlewares have transformed the response body into type T
         return <Response<T>>res;
     }
 }
 
 async function chain(middleware: Middleware, req: Request, res: Response, next: NextFn, responding: boolean): Promise<any> {
-    if ((!responding && res.responded) || (responding && res.completed)){
+    if ((!responding && res.isResponded) || (responding && res.isCompleted)){
         console.warn(`Calling next() when response is already marked as done.`);
         return Promise.resolve({});
     }

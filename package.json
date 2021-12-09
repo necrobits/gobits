@@ -2,11 +2,22 @@
   "name": "gobits",
   "version": "0.0.1",
   "repository": "git@github.com:necrobits/gobits.git",
-  "author": "Andy Tran <andy.tran11996@gmail.com>",
+  "description": "An extensible HTTP client for JS",
+  "keywords": [
+    "http",
+    "fetch",
+    "js"
+  ],
+  "author": "Phuc Tran <andy.tran11996@gmail.com>",
   "license": "MIT",
   "main": "./lib/cjs/index.js",
   "module": "./lib/esm/index.js",
   "types": "./lib/esm/index.d.ts",
+  "files": [
+    "lib",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "yarn build:esm && yarn build:cjs",
     "build:esm": "tsc",
