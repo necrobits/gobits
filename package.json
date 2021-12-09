@@ -1,15 +1,23 @@
 {
   "name": "gobits",
   "version": "0.0.1",
-  "main": "index.js",
   "repository": "git@github.com:necrobits/gobits.git",
   "author": "Andy Tran <andy.tran11996@gmail.com>",
   "license": "MIT",
+  "main": "./lib/cjs/index.js",
+  "module": "./lib/esm/index.js",
+  "types": "./lib/esm/index.d.ts",
+  "scripts": {
+    "build": "yarn build:esm && yarn build:cjs",
+    "build:esm": "tsc",
+    "build:cjs": "tsc --module commonjs --outDir lib/cjs"
+  },
   "devDependencies": {
     "@types/lodash": "^4.14.177",
     "typescript": "^4.5.2"
   },
   "dependencies": {
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "query-string": "^7.0.1"
   }
 }
