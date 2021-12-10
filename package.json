@@ -21,10 +21,12 @@
   "scripts": {
     "build": "yarn build:esm && yarn build:cjs",
     "build:esm": "tsc",
-    "build:cjs": "tsc --module commonjs --outDir lib/cjs"
+    "build:cjs": "tsc --module commonjs --outDir lib/cjs",
+    "gen:docs": "typedoc"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.177",
+    "typedoc": "^0.22.10",
     "typescript": "^4.5.2"
   },
   "dependencies": {

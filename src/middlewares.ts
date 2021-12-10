@@ -1,15 +1,26 @@
 import _ from 'lodash';
 import {Middleware} from './gobits';
 
-export function autoUrlEncodedForm(){
-    return <Middleware>((req, _, next, responding) => {
+/**
+ * @internal
+ */
+export function autoForm(){
+    return <Middleware>((req, _res, next, responding) => {
         if (!responding && req.opts.type?.toLowerCase() === 'form'){
-            req.headers['content-type'] = 'application/x-www-form-urlencoded';
+            if (!req.body && req.opts.form){
+                req.body = new FormData();
+                _.forIn(req.opts.form, (value, key) => {
+                    req.body.append(key, value);
+                });
+            }
         }
         return next();
     });  
 }
 
+/**
+ * @internal
+ */
 export function autoJson(){
     return <Middleware>((req, res, next, responding) => {
         if (!responding && req.opts.type?.toLowerCase() === 'json' && req.body && !_.isString(req.body)){

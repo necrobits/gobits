@@ -17,5 +17,12 @@
       "allowSyntheticDefaultImports": true
     },
     "include": ["src"],
-    "exclude": ["node_modules", "lib"]
+    "exclude": ["node_modules", "lib"],
+    "typedocOptions": {
+      "entryPoints": ["src/index.ts"],
+      "out": "docs",
+      "darkHighlightTheme": "dark-plus",
+      "excludeInternal": true,
+      "excludePrivate":  true
+    }
   }

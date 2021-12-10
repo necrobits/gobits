@@ -1,2 +1,9 @@
-export {Gobits, Middleware} from './gobits';
-export {autoJson, autoUrlEncodedForm} from './middlewares';
+export {
+    Gobits, 
+    Middleware,
+    Request,
+    Response,
+    GlobalOptions,
+    RequestOptions
+} from './gobits';
+export {autoJson, autoForm} from './middlewares';
