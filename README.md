@@ -16,8 +16,8 @@ const simpleAuth = (req, res, next) => {
     req.headers['Authorization'] = `Bearer ABCD-EFGH`;
     return next();
 }
-const responseLogger = (req, res, next, responding) => {
-    if (responding){ // After receiving the response from fetch (2. pass)
+const responseLogger = (req, res, next, responded) => {
+    if (responded){ // After receiving the response from fetch (2. pass)
         console.log('Response:', res.body);   
     }
     return next();

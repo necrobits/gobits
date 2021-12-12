@@ -29,7 +29,7 @@ type BodyParserFn = (response: globalThis.Response) => Promise<any>;
  * The middleware must return void or a promise. Therefore, the middleware can also be asynchronous
  * @example
  * ```typescript
- * const errorLogger = async (req, res, next, responding) => {
+ * const errorLogger = async (req, res, next, responded) => {
  *    if (!res.ok) {
  *       await writeToLog(`${req.url} failed with ${res.status}`);
  *    }
@@ -40,9 +40,9 @@ type BodyParserFn = (response: globalThis.Response) => Promise<any>;
  * @param req The Gobits request object.
  * @param res The Gobits response object.
  * @param next The next function to call. This function should be called when the middleware is done. 
- * @param responding Whether the middleware is in the first (false) or second pass (true).
+ * @param responded Whether the middleware is in the first (false) or second pass (true).
  */
-export type Middleware = (req: Request, res: Response, next: NextFn, responding?: boolean) => Promise<any> | void;
+export type Middleware = (req: Request, res: Response, next: NextFn, responded?: boolean) => Promise<any> | void;
 
 
 /**
@@ -390,12 +390,12 @@ export class Gobits {
     }
 }
 
-async function chain(middleware: Middleware, req: Request, res: Response, next: NextFn, responding: boolean): Promise<any> {
-    if ((!responding && res.isResponded) || (responding && res.isCompleted)) {
+async function chain(middleware: Middleware, req: Request, res: Response, next: NextFn, responded: boolean): Promise<any> {
+    if ((!responded && res.isResponded) || (responded && res.isCompleted)) {
         console.warn(`Calling next() when response is already marked as done.`);
         return Promise.resolve({});
     }
-    return await middleware(req, res, next, responding);
+    return await middleware(req, res, next, responded);
 }
 
 function transformFetchHeaders(fetchHeaders: globalThis.Headers): Headers {
