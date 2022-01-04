@@ -338,7 +338,7 @@ export class Gobits {
             query: queryParams,
         });
 
-        const req = new Request(targetUrl, method, _.merge(this.config, opts));
+        const req = new Request(targetUrl, method, _.merge({...this.config}, opts));
         const res = new Response<T>();
 
         // Pass through the middleware chain
