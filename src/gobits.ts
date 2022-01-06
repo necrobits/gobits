@@ -350,7 +350,7 @@ export class Gobits {
 
         if (!res.isResponded) {
             const controller = new AbortController();
-            const promise = fetch(url, {
+            const promise = fetch(req.url, {
                 signal: controller.signal,
                 ...req
             });
