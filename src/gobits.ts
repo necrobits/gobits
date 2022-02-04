@@ -54,12 +54,13 @@ export type Middleware = (req: Request, res: Response, next: NextFn, responded?:
  * @param type The type of the request (`json` or `form`). This will be handled by the built-in middleware
  * @param useDefaultMiddlewares Use the built-in middlewares provided by gobits (cannot be overriden) 
  * @param baseUrl The base url for the request. (cannot be overriden)   
- */ 
+ */
 export type GlobalOptions = {
     timeout: number;
     baseUrl: string;
     type?: string;
     useDefaultMiddlewares: boolean;
+    defaultOpts: any;
 }
 
 /**
@@ -106,10 +107,16 @@ export class Request<T = any> {
     constructor(url: string, method: RequestMethod, opts: RequestOptions = {}) {
         this.method = method;
         this.url = url;
-        this.opts = opts;
-        this.headers = opts.headers || {};
-        this.query = opts.query || {};
         this.body = opts.body || null;
+        this.opts = {
+            ...opts,
+            method: method,
+            headers: opts.headers || {},
+            query: opts.query || {},
+            body: this.body ? JSON.stringify(this.body) : null,
+        };
+        this.headers = this.opts.headers!;
+        this.query = this.opts.query!;
     }
 }
 
@@ -129,7 +136,7 @@ export class Response<T = any>{
     public headers: Headers;
     /**
      * The status code of the response
-     */  
+     */
     public status: number;
     /**
      * The body of the response
@@ -228,7 +235,8 @@ export class Gobits {
         baseUrl = "",
         timeout = 5000,
         useDefaultMiddlewares = true,
-        type = 'json'
+        type = 'json',
+        defaultOpts = {}
     } = {}) {
         if (baseUrl.length > 0 && !baseUrl.startsWith('http:') && !baseUrl.startsWith('https:')) {
             throw new Error('Base url must start with http or https, or be empty');
@@ -237,7 +245,8 @@ export class Gobits {
             timeout,
             baseUrl,
             useDefaultMiddlewares,
-            type
+            type,
+            defaultOpts
         };
         this.middlewares = [];
 
@@ -338,7 +347,7 @@ export class Gobits {
             query: queryParams,
         });
 
-        const req = new Request(targetUrl, method, _.merge({...this.config}, opts));
+        const req = new Request(targetUrl, method, _.merge({ ...this.config }, opts));
         const res = new Response<T>();
 
         // Pass through the middleware chain
@@ -352,7 +361,8 @@ export class Gobits {
             const controller = new AbortController();
             const promise = fetch(req.url, {
                 signal: controller.signal,
-                ...req
+                ...this.config.defaultOpts,
+                ...req.opts
             });
             const timeout = setTimeout(() => controller.abort(), opts.timeout || this.config.timeout);
             promise.finally(() => clearTimeout(timeout));
