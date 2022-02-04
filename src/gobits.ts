@@ -56,11 +56,11 @@ export type Middleware = (req: Request, res: Response, next: NextFn, responded?:
  * @param baseUrl The base url for the request. (cannot be overriden)   
  */
 export type GlobalOptions = {
-    timeout: number;
-    baseUrl: string;
+    timeout?: number;
+    baseUrl?: string;
     type?: string;
-    useDefaultMiddlewares: boolean;
-    defaultOpts: Record<string, any>;
+    useDefaultMiddlewares?: boolean;
+    defaultOpts?: Record<string, any>;
 }
 
 /**
