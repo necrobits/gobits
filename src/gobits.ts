@@ -60,7 +60,7 @@ export type GlobalOptions = {
     baseUrl: string;
     type?: string;
     useDefaultMiddlewares: boolean;
-    defaultOpts: any;
+    defaultOpts: Record<string, any>;
 }
 
 /**
@@ -237,7 +237,7 @@ export class Gobits {
         useDefaultMiddlewares = true,
         type = 'json',
         defaultOpts = {}
-    } = {}) {
+    } = {} as GlobalOptions) {
         if (baseUrl.length > 0 && !baseUrl.startsWith('http:') && !baseUrl.startsWith('https:')) {
             throw new Error('Base url must start with http or https, or be empty');
         }
