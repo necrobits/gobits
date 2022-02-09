@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import * as queryString from 'query-string';
 
-import { autoForm, autoJson } from './middlewares';
+import {autoForm, autoJson} from './middlewares';
 
 type Headers = { [headerName: string]: string }
 type RequestMethod = 'GET' | 'PUT' | 'POST' | 'DELETE' | 'PATCH';
@@ -9,22 +9,25 @@ type QueryParams = { [paramName: string]: string | number }
 
 type NextFn = () => Promise<any>;
 type BodyParserFn = (response: globalThis.Response) => Promise<any>;
-
+const BodyParsers = {
+    'text': (r: globalThis.Response) => r.text(),
+    'blob': (r: globalThis.Response) => r.blob(),
+};
 /**
  * A middleware placed in the chain to handle the request and response.
  * There are **three stages** with **three states** of the response:
  * - On the first pass, the request object will be passed through all middlewares. (state = Pending)
  * - After the first pass, an actual request will be sent to the server. (state = Responded)
  * - After receiving the response, the response will be passed through all middlewares. (state = Completed)
- * 
+ *
  * Of course, you can also skip parts of the chain by marking the response as completed or responded.
  * The response can be marked as follows:
  * ```typescript
- * res.markAsResponded(); 
- * ``` 
+ * res.markAsResponded();
+ * ```
  * or
  * ```
- * res.markAsCompleted(); 
+ * res.markAsCompleted();
  * ```
  * The middleware must return void or a promise. Therefore, the middleware can also be asynchronous
  * @example
@@ -36,10 +39,10 @@ type BodyParserFn = (response: globalThis.Response) => Promise<any>;
  *    next();
  * }
  * ```
- * 
+ *
  * @param req The Gobits request object.
  * @param res The Gobits response object.
- * @param next The next function to call. This function should be called when the middleware is done. 
+ * @param next The next function to call. This function should be called when the middleware is done.
  * @param responded Whether the middleware is in the first (false) or second pass (true).
  */
 export type Middleware = (req: Request, res: Response, next: NextFn, responded?: boolean) => Promise<any> | void;
@@ -48,12 +51,12 @@ export type Middleware = (req: Request, res: Response, next: NextFn, responded?:
 /**
  * Define the global options for the requests.
  * Some options can be overridden by the request options.
- * 
- * 
+ *
+ *
  * @param timeout The timeout for the request.
  * @param type The type of the request (`json` or `form`). This will be handled by the built-in middleware
- * @param useDefaultMiddlewares Use the built-in middlewares provided by gobits (cannot be overriden) 
- * @param baseUrl The base url for the request. (cannot be overriden)   
+ * @param useDefaultMiddlewares Use the built-in middlewares provided by gobits (cannot be overriden)
+ * @param baseUrl The base url for the request. (cannot be overriden)
  */
 export type GlobalOptions = {
     timeout?: number;
@@ -67,7 +70,7 @@ export type GlobalOptions = {
  * An object that contains the options for a single request.
  * Those options will override the global options.
  * You can also add any custom property to this object, so that your middlewares can use it.
- * 
+ *
  * @param headers The headers to send with the request.
  * @param query The query parameters to send with the request.
  * @param body The body to send with the request.
@@ -104,6 +107,7 @@ export class Request<T = any> {
     public body: T | null;
     readonly opts: RequestOptions;
     readonly method: RequestMethod;
+
     constructor(url: string, method: RequestMethod, opts: RequestOptions = {}) {
         this.method = method;
         this.url = url;
@@ -113,7 +117,7 @@ export class Request<T = any> {
             method: method,
             headers: opts.headers || {},
             query: opts.query || {},
-            body: this.body ? JSON.stringify(this.body) : null,
+            body: this.body,
         };
         this.headers = this.opts.headers!;
         this.query = this.opts.query!;
@@ -129,7 +133,7 @@ enum ResponseState {
 /**
  * The Gobits response object
  */
-export class Response<T = any>{
+export class Response<T = any> {
     /**
      * The response headers
      */
@@ -168,6 +172,7 @@ export class Response<T = any>{
         }
         this._state = ResponseState.Responded;
     }
+
     /**
      * Mark the response as completed.
      * See {@link Middleware} for more information.
@@ -195,7 +200,7 @@ export class Response<T = any>{
     }
 
     /**
-     * True if the request was redirected 
+     * True if the request was redirected
      */
     public get redirected(): boolean {
         return this._nativeResponse?.redirected ?? false;
@@ -232,12 +237,12 @@ export class Gobits {
     config: GlobalOptions;
 
     constructor({
-        baseUrl = "",
-        timeout = 5000,
-        useDefaultMiddlewares = true,
-        type = 'json',
-        defaultOpts = {}
-    } = {} as GlobalOptions) {
+                    baseUrl = "",
+                    timeout = 5000,
+                    useDefaultMiddlewares = true,
+                    type = 'json',
+                    defaultOpts = {}
+                } = {} as GlobalOptions) {
         if (baseUrl.length > 0 && !baseUrl.startsWith('http:') && !baseUrl.startsWith('https:')) {
             throw new Error('Base url must start with http or https, or be empty');
         }
@@ -258,7 +263,7 @@ export class Gobits {
 
     /**
      * Add a middleware to the request and response pipeline
-     * 
+     *
      * @param middleware - the middleware to be added
      * @returns the Gobits instance to allow chaining
      */
@@ -269,7 +274,7 @@ export class Gobits {
 
     /**
      * Send a GET request to the given url with the given options
-     * 
+     *
      * @template T - the type of the response body, default is `any`
      * @param url - the url to be requested. If the url starts with '/', it will be appended to the base url
      * @param opts - the options to make the request (see {@link RequestOptions})
@@ -281,7 +286,7 @@ export class Gobits {
 
     /**
      * Send a POST request to the given url with the given options
-     * 
+     *
      * @template T - the type of the response body, default is `any`
      * @param url - the url to be requested. If the url starts with '/', it will be appended to the base url
      * @param opts - the options to make the request (see {@link RequestOptions})
@@ -294,7 +299,7 @@ export class Gobits {
     /**
      * Send a PUT request to the given url with the given options
      *
-     * @template T - the type of the response body, default is `any` 
+     * @template T - the type of the response body, default is `any`
      * @param url - the url to be requested. If the url starts with '/', it will be appended to the base url
      * @param opts - the options to make the request (see {@link RequestOptions})
      * @returns a Promise that resolves to a Gobits Response object
@@ -306,7 +311,7 @@ export class Gobits {
     /**
      * Send a PATCH request to the given url with the given options
      *
-     * @template T - the type of the response body, default is `any` 
+     * @template T - the type of the response body, default is `any`
      * @param url - the url to be requested. If the url starts with '/', it will be appended to the base url
      * @param opts - the options to make the request (see {@link RequestOptions})
      * @returns a Promise that resolves to a Gobits Response object
@@ -314,9 +319,10 @@ export class Gobits {
     patch<T = any>(url: string, opts: RequestOptions = {}): Promise<Response<T | null>> {
         return this.request(url, 'PATCH', opts);
     }
+
     /**
      * Send a DELETE request to the given url with the given options
-     *  
+     *
      * @template T - the type of the response body, default is `any`
      * @param url - the url to be requested. If the url starts with '/', it will be appended to the base url
      * @param opts - the options to make the request (see {@link RequestOptions})
@@ -327,27 +333,27 @@ export class Gobits {
     }
 
     /**
-     * Make a request to the given url with the given options. 
-     * 
+     * Make a request to the given url with the given options.
+     *
      * @template T - the type of the response body, default is `any`
      * @param url - the url to be requested. If the url starts with '/', it will be appended to the base url
      * @param method - the method to be used, default is GET
      * @param opts - the options to make the request (see {@link RequestOptions})
-     * @returns a Promise that resolves to a Gobits Response object 
+     * @returns a Promise that resolves to a Gobits Response object
      */
     async request<T = any>(url: string, method: RequestMethod = 'GET', opts: RequestOptions = {}): Promise<Response<T | null>> {
         // Extract query parameters and construct return objects
         if (url.startsWith('/')) {
             url = this.config.baseUrl + url;
         }
-        const { query: queryInUrl, url: endpoint } = queryString.parseUrl(url);
+        const {query: queryInUrl, url: endpoint} = queryString.parseUrl(url);
         const queryParams = _.merge(queryInUrl, opts.query || {});
         const targetUrl = queryString.stringifyUrl({
             url: endpoint,
             query: queryParams,
         });
 
-        const req = new Request(targetUrl, method, _.merge({ ...this.config }, opts));
+        const req = new Request(targetUrl, method, _.merge({...this.config}, opts));
         const res = new Response<T>();
 
         // Pass through the middleware chain
@@ -359,10 +365,12 @@ export class Gobits {
 
         if (!res.isResponded) {
             const controller = new AbortController();
+            const {body,...others} = req.opts;
             const promise = fetch(req.url, {
                 signal: controller.signal,
                 ...this.config.defaultOpts,
-                ...req.opts
+                body: body ?  JSON.stringify(body) : null,
+                ...others
             });
             const timeout = setTimeout(() => controller.abort(), opts.timeout || this.config.timeout);
             promise.finally(() => clearTimeout(timeout));
@@ -416,7 +424,4 @@ function transformFetchHeaders(fetchHeaders: globalThis.Headers): Headers {
     return headers;
 }
 
-const BodyParsers = {
-    'text': (r: globalThis.Response) => r.text(),
-    'blob': (r: globalThis.Response) => r.blob(),
-}
+
