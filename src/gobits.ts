@@ -116,11 +116,9 @@ export class Request<T = any> {
             ...opts,
             method: method,
             headers: opts.headers || {},
-            query: opts.query || {},
-            body: this.body,
         };
         this.headers = this.opts.headers!;
-        this.query = this.opts.query!;
+        this.query = opts.query || {};
     }
 }
 
@@ -347,13 +345,9 @@ export class Gobits {
             url = this.config.baseUrl + url;
         }
         const {query: queryInUrl, url: endpoint} = queryString.parseUrl(url);
-        const queryParams = _.merge(queryInUrl, opts.query || {});
-        const targetUrl = queryString.stringifyUrl({
-            url: endpoint,
-            query: queryParams,
-        });
+        opts.query = _.merge(queryInUrl, opts.query || {});
 
-        const req = new Request(targetUrl, method, _.merge({...this.config}, opts));
+        const req = new Request(endpoint, method, _.merge({...this.config}, opts));
         const res = new Response<T>();
 
         // Pass through the middleware chain
@@ -363,14 +357,18 @@ export class Gobits {
             () => Promise.resolve({}));
         await next();
 
+
         if (!res.isResponded) {
             const controller = new AbortController();
-            const {body,...others} = req.opts;
-            const promise = fetch(req.url, {
+            const targetUrl = queryString.stringifyUrl({
+                url: req.url,
+                query: req.query,
+            });
+            const promise = fetch(targetUrl, {
                 signal: controller.signal,
                 ...this.config.defaultOpts,
-                body: _.isPlainObject(body) ?  JSON.stringify(body) : body,
-                ...others
+                ...req.opts,
+                body: _.isObjectLike(req.body) ? JSON.stringify(req.body) : req.body,
             });
             const timeout = setTimeout(() => controller.abort(), opts.timeout || this.config.timeout);
             promise.finally(() => clearTimeout(timeout));
