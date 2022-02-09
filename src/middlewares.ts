@@ -24,7 +24,6 @@ export function autoForm(){
 export function autoJson(){
     return <Middleware>((req, res, next, responding) => {
         if (!responding && req.opts.type?.toLowerCase() === 'json' && req.body && !_.isString(req.body)){
-            req.body = JSON.stringify(req.body);
             if (!req.headers.hasOwnProperty('content-type')){
                 req.headers['content-type'] = 'application/json';
             }

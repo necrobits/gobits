@@ -369,7 +369,7 @@ export class Gobits {
             const promise = fetch(req.url, {
                 signal: controller.signal,
                 ...this.config.defaultOpts,
-                body: body ?  JSON.stringify(body) : null,
+                body: _.isPlainObject(body) ?  JSON.stringify(body) : body,
                 ...others
             });
             const timeout = setTimeout(() => controller.abort(), opts.timeout || this.config.timeout);
