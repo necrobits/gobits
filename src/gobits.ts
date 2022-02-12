@@ -364,11 +364,16 @@ export class Gobits {
                 url: req.url,
                 query: req.query,
             });
+            const isFormData = req.body instanceof FormData;
+            let body = req.body;
+            if (!isFormData) {
+                body = _.isObjectLike(req.body) ? JSON.stringify(req.body) : req.body;
+            }
             const promise = fetch(targetUrl, {
                 signal: controller.signal,
                 ...this.config.defaultOpts,
                 ...req.opts,
-                body: _.isObjectLike(req.body) ? JSON.stringify(req.body) : req.body,
+                body
             });
             const timeout = setTimeout(() => controller.abort(), opts.timeout || this.config.timeout);
             promise.finally(() => clearTimeout(timeout));
