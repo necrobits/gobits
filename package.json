@@ -1,6 +1,6 @@
 {
   "name": "gobits",
-  "version": "0.0.11",
+  "version": "0.1.0",
   "repository": "git@github.com:necrobits/gobits.git",
   "description": "An extensible HTTP client for JS",
   "keywords": [
